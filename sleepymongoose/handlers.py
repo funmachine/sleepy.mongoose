@@ -43,7 +43,7 @@ class MongoHandler:
 
             self._connect(args, out.ostream, name = name)
 
-    def _get_connection(self, name = None, uri='mongodb://localhost:27017'):
+    def _get_connection(self, name = None, uri='mongodb://localhost:27017', rset = None):
         if name == None:
             name = "default"
 
@@ -51,7 +51,11 @@ class MongoHandler:
             return self.connections[name]
 
         try:
-            connection = Connection(uri, network_timeout = 2)
+	    if rset == None:
+                connection = Connection(uri, network_timeout = 2)
+	    else:
+                connection = Connection(uri, replicaSet = rset, network_timeout = 2)
+
         except (ConnectionFailure, ConfigurationError):
             return None
 
@@ -169,11 +173,17 @@ class MongoHandler:
         if name == None:
             name = "default"
 
-        conn = self._get_connection(name, uri)
+	#FM:SJP - support replica sets
+	if "replicaset" in args:
+		rset = args.getvalue('replicaset')
+	else:
+		rset = None
+
+        conn = self._get_connection(name, uri, rset)
         if conn != None:
-            out('{"ok" : 1, "server" : "%s", "name" : "%s"}' % (uri, name))
+            out('{"ok" : 1, "server" : "%s", "name" : "%s", "replicaset" : "%s"}' % (uri, name, rset))
         else:
-            out('{"ok" : 0, "errmsg" : "could not connect", "server" : "%s", "name" : "%s"}' % (uri, name))
+            out('{"ok" : 0, "errmsg" : "could not connect", "server" : "%s", "name" : "%s", "replicaset" : "%s"}' % (uri, name, rset))
 
     def _authenticate(self, args, out, name = None, db = None, collection = None):
         """
