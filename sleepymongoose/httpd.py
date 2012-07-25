@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from SocketServer import BaseServer
+from SocketServer import BaseServer, ThreadingMixIn
 from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
 from handlers import MongoHandler
 
@@ -26,6 +26,7 @@ import urlparse
 import cgi
 import getopt
 import sys
+import threading
 
 try:
     import json
@@ -38,9 +39,10 @@ try:
 except AttributeError:
     urlparse.parse_qs = cgi.parse_qs
 
+class ThreadedMongoServer(ThreadingMixIn, HTTPServer):
+    pass
 
-
-class MongoServer(HTTPServer):
+class MongoServer(ThreadingMixIn, HTTPServer):
 
     pem = None
 
@@ -224,7 +226,7 @@ class MongoHTTPRequest(BaseHTTPRequestHandler):
 
         if MongoServer.pem == None:
             try:
-                server = HTTPServer(('', port), MongoHTTPRequest)
+                server = ThreadedMongoServer(('', port), MongoHTTPRequest)
             except socket.error, (value, message):
                 if value == 98:
                     print "could not bind to localhost:%d... is sleepy.mongoose already running?\n" % port
