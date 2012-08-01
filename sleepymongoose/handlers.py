@@ -28,20 +28,33 @@ class MongoHandler:
 
     _cursor_id = 0
 
-    def __init__(self, mongos):
+    def __init__(self, mongos, rset):
         self.connections = {}
-
-        for host in mongos:
-            args = MongoFakeFieldStorage({"server" : host})
-
-            out = MongoFakeStream()
-            if len(mongos) == 1:
-                name = "default"
-            else:
-                name = host.replace(".", "")
-                name = name.replace(":", "")
-
-            self._connect(args, out.ostream, name = name)
+        
+        if rset != None:
+            uri = "mongodb://"
+            if mongos[0].startswith("http://"):
+                uri = "http://"
+             
+            for host in mongos:
+                re.sub('\w+://','',host)
+                uri += host + ","
+                
+            uri = uri[:-1]
+            
+            self._get_connection(None, uri, rset)    
+        else:
+            for host in mongos:
+                args = MongoFakeFieldStorage({"server" : host})
+    
+                out = MongoFakeStream()
+                if len(mongos) == 1:
+                    name = "default"
+                else:
+                    name = host.replace(".", "")
+                    name = name.replace(":", "")
+    
+                self._connect(args, out.ostream, name = name)
 
     def _get_connection(self, name = None, uri='mongodb://localhost:27017', rset = None):
         if name == None:
@@ -51,11 +64,10 @@ class MongoHandler:
             return self.connections[name]
 
         try:
-	    if rset == None:
+            if rset == None:
                 connection = Connection(uri, network_timeout = 2)
-	    else:
+            else:
                 connection = Connection(uri, replicaSet = rset, network_timeout = 2)
-
         except (ConnectionFailure, ConfigurationError):
             return None
 
@@ -82,7 +94,7 @@ class MongoHandler:
 
         return (host, port)
 
-    def sm_object_hook(obj):
+    def sm_object_hook(self, obj):
         if "$pyhint" in obj:
             temp = SON()
             for pair in obj['$pyhint']:
@@ -125,7 +137,7 @@ class MongoHandler:
             out('{"ok" : 0, "errmsg" : "wasn\'t connected to the db and '+
                 'couldn\'t reconnect", "name" : "%s"}' % name)
             return
-        except (OperationFailure, error):
+        except OperationFailure, error:
             out('{"ok" : 0, "errmsg" : "%s"}' % error)
             return
 
@@ -172,11 +184,11 @@ class MongoHandler:
         if name == None:
             name = "default"
 
-	#FM:SJP - support replica sets
-	if "replicaset" in args:
-		rset = args.getvalue('replicaset')
-	else:
-		rset = None
+    #FM:SJP - support replica sets
+        if "replicaset" in args:
+            rset = args.getvalue('replicaset')
+        else:
+            rset = None
 
         conn = self._get_connection(name, uri, rset)
         if conn != None:

@@ -120,6 +120,7 @@ class MongoHTTPRequest(BaseHTTPRequestHandler):
     mongos = []
     response_headers = []
     jsonp_callback = None;
+    rset = None;
 
     def _parse_call(self, uri):
         """ 
@@ -281,7 +282,7 @@ class MongoHTTPRequest(BaseHTTPRequestHandler):
             print "--------Secure Connection--------\n"
             server = MongoServer(('', port), MongoHTTPSRequest)
 
-        MongoHandler.mh = MongoHandler(MongoHTTPRequest.mongos)
+        MongoHandler.mh = MongoHandler(MongoHTTPRequest.mongos, MongoHTTPRequest.rset)
         
         print "listening for connections on http://localhost:27080\n"
         try:
@@ -305,11 +306,12 @@ def usage():
     print "\t-d|--docroot\tlocation from which to load files"
     print "\t-s|--secure\tlocation of .pem file if ssl is desired"
     print "\t-m|--mongos\tcomma-separated list of mongo servers to connect to"
+    print "\t-r|--rset\tname of replica set to connect to"
 
 
 def main():
     try:
-        opts, args = getopt.getopt(sys.argv[1:], "xd:s:m:", ["xorigin", "docroot=",
+        opts, args = getopt.getopt(sys.argv[1:], "xd:s:m:r:", ["xorigin", "docroot=",
             "secure=", "mongos="])
 
         for o, a in opts:
@@ -323,6 +325,8 @@ def main():
                 MongoHTTPRequest.mongos = a.split(',')
             if o == "-x" or o == "--xorigin":
                 MongoHTTPRequest.response_headers.append(("Access-Control-Allow-Origin","*"))
+            if o == "-r" or o == "--rset":
+                MongoHTTPRequest.rset = a
 
     except getopt.GetoptError:
         print "error parsing cmd line args."
