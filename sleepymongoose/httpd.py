@@ -308,11 +308,10 @@ def usage():
     print "\t-m|--mongos\tcomma-separated list of mongo servers to connect to"
     print "\t-r|--rset\tname of replica set to connect to"
 
-
 def main():
     try:
         opts, args = getopt.getopt(sys.argv[1:], "xd:s:m:r:", ["xorigin", "docroot=",
-            "secure=", "mongos="])
+            "secure=", "mongos=", "rset="])
 
         for o, a in opts:
             if o == "-d" or o == "--docroot":
