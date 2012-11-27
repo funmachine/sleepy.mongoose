@@ -121,6 +121,7 @@ class MongoHTTPRequest(BaseHTTPRequestHandler):
     response_headers = []
     jsonp_callback = None;
     rset = None;
+    whitelist = []
 
     def _parse_call(self, uri):
         """ 
@@ -151,6 +152,10 @@ class MongoHTTPRequest(BaseHTTPRequestHandler):
             self.send_error(404, 'Script Not Found: '+uri)
             return
 
+        if len(self.whitelist) > 0 and func_name not in self.whitelist:
+            self.send_error(404, 'Script Not Found: '+uri)
+            return
+
         name = None
         if "name" in args:
             if type(args).__name__ == "dict":
@@ -166,6 +171,7 @@ class MongoHTTPRequest(BaseHTTPRequestHandler):
                 self.jsonp_callback = args.getvalue("callback")
                 
         func = getattr(MongoHandler.mh, func_name, None)
+            
         if callable(func):
             self.send_response(200, 'OK')
             self.send_header('Content-type', MongoHTTPRequest.mimetypes['json'])
@@ -307,11 +313,12 @@ def usage():
     print "\t-s|--secure\tlocation of .pem file if ssl is desired"
     print "\t-m|--mongos\tcomma-separated list of mongo servers to connect to"
     print "\t-r|--rset\tname of replica set to connect to"
+    print "\t-w|--whitelist\tcomma separated list of allowed database commands"
 
 def main():
     try:
-        opts, args = getopt.getopt(sys.argv[1:], "xd:s:m:r:", ["xorigin", "docroot=",
-            "secure=", "mongos=", "rset="])
+        opts, args = getopt.getopt(sys.argv[1:], "xd:s:m:r:w:", ["xorigin", "docroot=",
+            "secure=", "mongos=", "rset=", "whitelist="])
 
         for o, a in opts:
             if o == "-d" or o == "--docroot":
@@ -326,6 +333,8 @@ def main():
                 MongoHTTPRequest.response_headers.append(("Access-Control-Allow-Origin","*"))
             if o == "-r" or o == "--rset":
                 MongoHTTPRequest.rset = a
+            if o == "-w" or o == "--whitelist":
+                MongoHTTPRequest.whitelist = a.split(',')
 
     except getopt.GetoptError:
         print "error parsing cmd line args."
