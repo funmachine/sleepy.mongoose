@@ -153,7 +153,7 @@ class MongoHTTPRequest(BaseHTTPRequestHandler):
             return
 
         if len(self.whitelist) > 0 and func_name not in self.whitelist:
-            self.send_error(404, 'Script Not Found: '+uri)
+            self.send_response(202, 'OK')
             return
 
         name = None
