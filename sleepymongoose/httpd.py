@@ -153,7 +153,10 @@ class MongoHTTPRequest(BaseHTTPRequestHandler):
             return
 
         if len(self.whitelist) > 0 and func_name not in self.whitelist:
-            self.send_response(202, 'OK')
+            self.send_response(200, 'OK')
+            self.send_header('Content-type', MongoHTTPRequest.mimetypes['json'])
+            self.end_headers()
+            self.wfile.write('{"ok" : 0, "errmsg" : "Method not allowed"}');
             return
 
         name = None
